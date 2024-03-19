@@ -20,7 +20,7 @@ class ApiService {
     return null;
   }
 
-  Future<void> uploadData(String snowflake,String baseUrl, String name, String relativeUrl) async {
+  Future<void> uploadComplete(String snowflake,String baseUrl, String name, String relativeUrl) async {
   // Define the API endpoint
   String apiUrl = 'https://cellular-way-359305.et.r.appspot.com/api/v2/upload-complete/$snowflake/';
 
