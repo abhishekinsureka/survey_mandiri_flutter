@@ -58,6 +58,15 @@ class _UploadDocument extends State<UploadDocument> {
     );
   }
 
+  void _uploadComplete(String baseUrl, String name, String relativeUrl) async {
+    final uploadComplete = (await ApiService().uploadComplete(widget.uploadId, baseUrl, name, relativeUrl));
+    Future.delayed(const Duration(seconds: 0)).then(
+      (value) => setState(
+        () {
+          print("Completed Called......");
+        }),);
+  }
+
   void _uploadFileToServer(
       String filePath, String baseUrl, int position) async {
     final dio = Dio();
@@ -76,7 +85,6 @@ class _UploadDocument extends State<UploadDocument> {
       onSendProgress: (count, total) =>
           uploadProgress = '${(count / total) * 100}',
     );
-    print('Abhishek.... upload percentage is $uploadProgress');
 
     setState(() {
       _documentUiModel[position].uploadPercentage = uploadProgress;
@@ -97,6 +105,29 @@ class _UploadDocument extends State<UploadDocument> {
         },
       );
     }
+
+    setState(() {
+      checkIfAllFilesAreUploaded();
+    });
+  }
+
+  void checkIfAllFilesAreUploaded(){
+    var numberOfFilesUploaded = 0;
+
+    for (var i = 0; i < _documentUiModel.length; i++) {
+     if(_documentUiModel[i].isUploaded == true){
+      numberOfFilesUploaded ++;
+     }
+    }
+    print("Number of file uploaded is $numberOfFilesUploaded");
+    print("Total number of docs is ${_documentUiModel.length}");
+
+    if(numberOfFilesUploaded == _documentUiModel.length){
+      for (var i = 0; i < _documentUiModel.length; i++) {
+        _uploadComplete(_documentUiModel[i].baseUrl ?? '', _documentUiModel[i].name ?? '', _documentUiModel[i].relativeUrl ?? '');
+
+    }
+  }
   }
 
   @override
@@ -258,12 +289,12 @@ class _UploadDocument extends State<UploadDocument> {
               onPressed: () {
                 for (var i = 0; i < _documentUiModel.length; i++) {
                   _documentUiModel[i].isUploading == true;
-                  if (_documentUiModel[i].takenPicturePath != null) {
+                  if (_documentUiModel[i].isUploaded == false &&  _documentUiModel[i].takenPicturePath != null) {
                     _uploadFileToServer(
                         _documentUiModel[i].takenPicturePath ?? '',
                         _documentUiModel[i].signedUrl ?? '',
                         i);
-                  } else if (_documentUiModel[i].takenVideoPath != null) {
+                  } else if (_documentUiModel[i].isUploaded == false &&  _documentUiModel[i].takenVideoPath != null) {
                     _uploadFileToServer(
                         _documentUiModel[i].takenVideoPath ?? '',
                         _documentUiModel[i].signedUrl ?? '',

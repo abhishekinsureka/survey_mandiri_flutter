@@ -72,7 +72,7 @@ class _DocumentCardViewItem extends State<DocumentCardViewItem> {
                     widget.item.name?.toUpperCase() ?? '',
                     style: const TextStyle(
                         fontSize: 16.0, fontWeight: FontWeight.bold),
-                  ),
+                  ), 
                   const SizedBox(height: 8.0),
                   Text(
                     _setDocumentDescriptions(widget.item.name?.toUpperCase(),
