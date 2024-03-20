@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 import 'package:survey_mandiri/data/document_list_response.dart';
 import 'package:survey_mandiri/model/document_list_ui_model.dart';
 import 'package:survey_mandiri/network/api_service.dart';
+import 'package:survey_mandiri/network/upload_complete_request.dart';
 import 'package:survey_mandiri/screen/video_preview.dart';
 import 'package:survey_mandiri/widgets/elevated_cardview.dart';
 import 'package:survey_mandiri/widgets/cardview_document_details.dart';
@@ -12,7 +14,9 @@ import 'package:survey_mandiri/screen/take_picture.dart';
 import 'package:survey_mandiri/screen/record_video.dart';
 import 'package:survey_mandiri/screen/image_preview.dart';
 import 'package:dio/dio.dart';
+import 'package:survey_mandiri/data/upload_complete_request.dart';
 import 'dart:io';
+
 
 class UploadDocument extends StatefulWidget {
   const UploadDocument({super.key, required this.uploadId});
@@ -28,6 +32,17 @@ class UploadDocument extends StatefulWidget {
 class _UploadDocument extends State<UploadDocument> {
   final List<DocumentsUiModel> _documentUiModel = [];
   String uploadProgress = '0.0';
+  bool _canShowButton = true;
+  late ProgressDialog pr =pr = ProgressDialog(
+      context,
+      type: ProgressDialogType.normal,
+      isDismissible: false,
+      /// your body here
+      customBody:const LinearProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Color.fromRGBO(239, 54, 125, 0.8)),
+        backgroundColor: Colors.white,
+      ),
+    );
 
   @override
   void initState() {
@@ -36,10 +51,12 @@ class _UploadDocument extends State<UploadDocument> {
   }
 
   void _fetchDocuments() async {
+    await pr.show();
     final documents = (await ApiService().fetchDocuments(widget.uploadId));
     Future.delayed(const Duration(seconds: 0)).then(
       (value) => setState(
         () {
+          pr.hide();
           if (documents?.result.documents != null) {
             for (var document in documents?.result.documents ?? <Document>[]) {
               _documentUiModel.add(
@@ -52,19 +69,40 @@ class _UploadDocument extends State<UploadDocument> {
                     signedUrl: document.signedUrl),
               );
             }
+          }else{
+            FocusManager.instance.primaryFocus?.unfocus();
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+     content: Text("Upload already completed or not allowed. Please contact customer support"),
+));
+            Navigator.pop(context);
           }
         },
       ),
     );
   }
 
-  void _uploadComplete(String baseUrl, String name, String relativeUrl) async {
-    final uploadComplete = (await ApiService().uploadComplete(widget.uploadId, baseUrl, name, relativeUrl));
+  void _uploadComplete() async {
+     await pr.show();
+List<UploadComplete> documents = [];
+
+for (var i = 0; i < _documentUiModel.length; i++) {
+documents.add(UploadComplete(baseUrl: _documentUiModel[i].baseUrl ?? '', 
+name: _documentUiModel[i].name ?? '', 
+relativeUrl: _documentUiModel[i].relativeUrl ?? ''));
+}
+
+  DocumentsRequestBody requestBody = DocumentsRequestBody(documents: documents);
+
+    final uploadComplete = (await ApiService().uploadComplete(widget.uploadId, requestBody));
     Future.delayed(const Duration(seconds: 0)).then(
       (value) => setState(
         () {
-          print("Completed Called......");
+          pr.hide();
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+     content: Text("All Documents uploaded successfully"),
+),);
         }),);
+       if (context.mounted) Navigator.of(context).pop();
   }
 
   void _uploadFileToServer(
@@ -93,22 +131,21 @@ class _UploadDocument extends State<UploadDocument> {
     if (responseGoogleStorage.statusCode == 200) {
       setState(
         () {
-          _documentUiModel[position].isUploaded == true;
-          _documentUiModel[position].isUploading == false;
+          _documentUiModel[position].isUploaded = true;
+          _documentUiModel[position].isUploading = false;
+          checkIfAllFilesAreUploaded();
         },
       );
     } else {
       setState(
         () {
-          _documentUiModel[position].isUploadFailed == true;
-          _documentUiModel[position].isUploading == false;
+          _canShowButton = true;
+          _documentUiModel[position].isUploadFailed = true;
+          _documentUiModel[position].isUploading = false;
+          checkIfAllFilesAreUploaded();
         },
       );
     }
-
-    setState(() {
-      checkIfAllFilesAreUploaded();
-    });
   }
 
   void checkIfAllFilesAreUploaded(){
@@ -123,10 +160,7 @@ class _UploadDocument extends State<UploadDocument> {
     print("Total number of docs is ${_documentUiModel.length}");
 
     if(numberOfFilesUploaded == _documentUiModel.length){
-      for (var i = 0; i < _documentUiModel.length; i++) {
-        _uploadComplete(_documentUiModel[i].baseUrl ?? '', _documentUiModel[i].name ?? '', _documentUiModel[i].relativeUrl ?? '');
-
-    }
+       _uploadComplete();
   }
   }
 
@@ -274,35 +308,42 @@ class _UploadDocument extends State<UploadDocument> {
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromRGBO(239, 54, 125, 0.8),
-                foregroundColor: Colors.white,
-                textStyle: const TextStyle(color: Colors.white, fontSize: 14),
-                fixedSize: const Size(300, 34),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    20,
+            child: Visibility(
+              visible: _canShowButton,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(239, 54, 125, 0.8),
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(color: Colors.white, fontSize: 14),
+                  fixedSize: const Size(300, 34),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      20,
+                    ),
                   ),
                 ),
-              ),
-              onPressed: () {
-                for (var i = 0; i < _documentUiModel.length; i++) {
-                  _documentUiModel[i].isUploading == true;
-                  if (_documentUiModel[i].isUploaded == false &&  _documentUiModel[i].takenPicturePath != null) {
-                    _uploadFileToServer(
-                        _documentUiModel[i].takenPicturePath ?? '',
-                        _documentUiModel[i].signedUrl ?? '',
-                        i);
-                  } else if (_documentUiModel[i].isUploaded == false &&  _documentUiModel[i].takenVideoPath != null) {
-                    _uploadFileToServer(
-                        _documentUiModel[i].takenVideoPath ?? '',
-                        _documentUiModel[i].signedUrl ?? '',
-                        i);
+                onPressed: () {
+                  for (var i = 0; i < _documentUiModel.length; i++) {
+                    setState(() {
+                      _canShowButton = false;
+                      _documentUiModel[i].isUploading = true;
+                    });
+                    
+                    if (_documentUiModel[i].takenPicturePath != null) {
+                      _uploadFileToServer(
+                          _documentUiModel[i].takenPicturePath ?? '',
+                          _documentUiModel[i].signedUrl ?? '',
+                          i);
+                    } else if (_documentUiModel[i].takenVideoPath != null) {
+                      _uploadFileToServer(
+                          _documentUiModel[i].takenVideoPath ?? '',
+                          _documentUiModel[i].signedUrl ?? '',
+                          i);
+                    }
                   }
-                }
-              },
-              child: const Text('Upload'),
+                },
+                child: const Text('Upload'),
+              ),
             ),
           ),
         ],

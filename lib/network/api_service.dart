@@ -3,8 +3,10 @@ import 'package:survey_mandiri/data/document_list_response.dart';
 import 'package:survey_mandiri/network/api_constant.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:survey_mandiri/network/upload_complete_request.dart';
 
 class ApiService {
+
   Future<DocumentList?> fetchDocuments(String quoteId) async {
     try {
       var url = Uri.parse(
@@ -20,20 +22,9 @@ class ApiService {
     return null;
   }
 
-  Future<void> uploadComplete(String snowflake,String baseUrl, String name, String relativeUrl) async {
+  Future<void> uploadComplete(String snowflake, DocumentsRequestBody requestBody) async {
   // Define the API endpoint
   String apiUrl = 'https://cellular-way-359305.et.r.appspot.com/api/v2/upload-complete/$snowflake/';
-
-  // Define the JSON request body
-  Map<String, dynamic> requestBody = {
-    "documents": [
-      {
-        "base_url": baseUrl,
-        "name": name,
-        "relative_url": relativeUrl
-      }
-    ]
-  };
 
   // Encode the JSON body
   String jsonBody = json.encode(requestBody);

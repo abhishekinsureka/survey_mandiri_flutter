@@ -44,6 +44,7 @@ dependencies:
   retrofit_generator: ^6.0.0+3
   mime: ^1.0.4
   dio: ^5.4.0
+  progress_dialog_null_safe: ^3.0.0
 
 dev_dependencies:
   flutter_test:
