@@ -201,8 +201,7 @@ relativeUrl: _documentUiModel[i].relativeUrl ?? ''));
                   future: Future(() => _documentUiModel),
                   builder: (context, snapshot) {
                     if (snapshot.hasData) {
-                      return Expanded(
-                        child: ListView.builder(
+                      return ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _documentUiModel.length,
@@ -295,8 +294,8 @@ relativeUrl: _documentUiModel[i].relativeUrl ?? ''));
                               ),
                             );
                           },
-                        ),
-                      );
+                        );
+                      
                     } else {
                       // Show loader indicator
                       return const CircularProgressIndicator();

@@ -88,7 +88,7 @@ class _MyTextInputLayout extends State<MyTextInputLayout> {
               ),
             ),
             onPressed: () {
-              // Add your logic here
+              FocusManager.instance.primaryFocus?.unfocus();
               _continueClicked();
             },
             child: const Text(
